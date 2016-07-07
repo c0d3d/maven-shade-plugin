@@ -1,0 +1,17 @@
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/mojo/ShadeMojoTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/mojo/ArtifactSelectorTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/DefaultShaderTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/resource/ApacheNoticeResourceTransformerTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/filter/MinijarFilterTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/relocation/SimpleRelocatorTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/relocation/SimpleRelocatorParameterTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/resource/XmlAppendingTransformerTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/MockShader.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/filter/SimpleFilterTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/mojo/ArtifactIdTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/mojo/RelativizePathTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/resource/ApacheLicenseResourceTransformerTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/resource/AppendingTransformerTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/resource/ComponentsXmlResourceTransformerTest.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/resource/ApacheNoticeResourceTransformerParameterTests.java
+/home/nlocketz/workspace/maven-shade-plugin/src/test/java/org/apache/maven/plugins/shade/resource/ServiceResourceTransformerTest.java
