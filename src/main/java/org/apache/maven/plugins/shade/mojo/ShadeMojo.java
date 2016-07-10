@@ -393,7 +393,6 @@ public class ShadeMojo
     public void execute()
         throws MojoExecutionException
     {
-        getLog().info( "Starting Neil's shader plugin ... " );
 
         setupHintedShader();
 

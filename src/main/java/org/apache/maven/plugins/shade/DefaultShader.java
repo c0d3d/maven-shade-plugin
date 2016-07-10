@@ -22,6 +22,8 @@ package org.apache.maven.plugins.shade;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.shade.filter.Filter;
 import org.apache.maven.plugins.shade.relocation.Relocator;
@@ -37,12 +39,14 @@ import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.RemappingClassAdapter;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -66,7 +70,9 @@ public class DefaultShader
     extends AbstractLogEnabled
     implements Shader
 {
-
+public static final String LINE_SEP = System.getProperty( "line.separator" );
+    public static final String SHADED_DEPS_PATH = "META-INF/SHADED-DEPS.LIST";
+    private Set<String> depsAdded = new HashSet<String>();
     public void shade( ShadeRequest shadeRequest )
         throws IOException, MojoExecutionException
     {
@@ -148,6 +154,7 @@ public class DefaultShader
                             RelocatorRemapper remapper, JarOutputStream jos, Multimap<String, File> duplicates )
         throws IOException, MojoExecutionException
     {
+        List<String> shadedIn = new LinkedList<String>();
         for ( File jar : shadeRequest.getJars() )
         {
 
@@ -156,14 +163,14 @@ public class DefaultShader
             List<Filter> jarFilters = getFilters( jar, shadeRequest.getFilters() );
 
             JarFile jarFile = newJarFile( jar );
-
+            
             try
             {
 
                 for ( Enumeration<JarEntry> j = jarFile.entries(); j.hasMoreElements(); )
                 {
                     JarEntry entry = j.nextElement();
-
+                    
                     String name = entry.getName();
 
                     if ( "META-INF/INDEX.LIST".equals( name ) )
@@ -172,8 +179,27 @@ public class DefaultShader
                         // jar is useless. Ideally, we could create a new one
                         // later
                         continue;
+                    } 
+                    else if ( SHADED_DEPS_PATH.equals( name ) ) 
+                    {
+                        // Here we found our list of shaded in dependencies
+                        // meaning that the jar was built using this plugin (or one that does the same thing)
+                        // we read the dependencies from here and include them in our list
+                        // (stuff shaded in a jar we shade in => we have shaded in the original stuff)
+                        InputStream depFile = jarFile.getInputStream( entry );
+                        try
+                        {
+                            copyLinesInto( depFile, shadedIn );
+                        }
+                        finally
+                        {
+                            depFile.close();
+                        }
                     }
-
+                    
+                    // We still want to include the name of the jar that was shaded
+                    addToDepsList( shadedIn, jar.getName() );
+                    
                     if ( !entry.isDirectory() && !isFiltered( jarFilters, name ) )
                     {
                         shadeSingleJar( shadeRequest, resources, transformers, remapper, jos, duplicates, jar, jarFile,
@@ -186,6 +212,39 @@ public class DefaultShader
             {
                 jarFile.close();
             }
+        }
+        addDepListEntry( jos, shadedIn );
+    }
+
+    private void addToDepsList( List<String> shadedIn, String name ) 
+    {
+        if ( !depsAdded.contains( name ) ) 
+        {
+            shadedIn.add( name );
+            depsAdded.add( name );
+        }
+        
+    }
+
+    private void addDepListEntry( JarOutputStream fatJar, List<String> shadedIn ) 
+            throws IOException 
+    {
+        fatJar.putNextEntry( new JarEntry( SHADED_DEPS_PATH ) );
+        for ( String jarName : shadedIn ) 
+        {
+            IOUtils.copy( new StringReader( jarName ), fatJar );
+            IOUtils.copy( new StringReader( LINE_SEP ), fatJar );
+        }
+        fatJar.closeEntry();
+    }
+
+    private void copyLinesInto( InputStream list, List<String> shadedIn ) throws IOException 
+    {
+        BufferedReader br = new BufferedReader( new InputStreamReader( list ) );
+        String temp = "";
+        while ( ( temp = br.readLine() ) != null ) 
+        {
+            addToDepsList( shadedIn, temp );
         }
     }
 

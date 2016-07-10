@@ -1,8 +1,0 @@
-#Wed Jul 06 23:01:02 EDT 2016
-/home/nlocketz/workspace/maven-shade-plugin/src/main/java/org/apache/maven/plugins/shade/mojo/ArtifactSelector.java=1467846714000
-/home/nlocketz/workspace/maven-shade-plugin/src/main/java/org/apache/maven/plugins/shade/mojo/RelativizePath.java=1467846714000
-/home/nlocketz/workspace/maven-shade-plugin/src/main/java/org/apache/maven/plugins/shade/filter/SimpleFilter.java=1467846714000
-/home/nlocketz/workspace/maven-shade-plugin/src/main/java/org/apache/maven/plugins/shade/ShadingResult.java=1467846714000
-/home/nlocketz/workspace/maven-shade-plugin/src/main/java/org/apache/maven/plugins/shade/filter/MinijarFilter.java=1467846714000
-/home/nlocketz/workspace/maven-shade-plugin/src/main/java/org/apache/maven/plugins/shade/mojo/ArtifactId.java=1467846714000
-configuration*?=5F803CCA0E60439BAAFF2F8B90A2546DA6D0EA12
