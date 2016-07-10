@@ -184,6 +184,25 @@ public class DefaultShaderTest
         s = newShader();
         s.shade( shadeRequest );
         testNumberOfShadedDeps(4, newUber);
+        
+        
+        // Now we test that we aren't doubling any entries, if we include the same jar twice it should
+        // only be present in the list once
+        set = new LinkedHashSet<File>();
+        set.add( newUber );
+        newUber = new File("target/foo-relocate-class-nested-rep.jar");
+        
+        shadeRequest = new ShadeRequest();
+        shadeRequest.setJars( set );
+        shadeRequest.setUberJar( newUber );
+        shadeRequest.setFilters( filters );
+        shadeRequest.setRelocators( relocators );
+        shadeRequest.setResourceTransformers( resourceTransformers );
+        s = newShader();
+        s.shade( shadeRequest );
+        // only an increase of one due to previous jar added
+        testNumberOfShadedDeps(5, newUber);
+        
     }
 
     private void testNumberOfShadedDeps( int i, File file ) throws Exception
