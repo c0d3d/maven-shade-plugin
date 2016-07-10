@@ -175,7 +175,7 @@ public class DefaultShader
                     JarEntry entry = j.nextElement();
                     
                     String name = entry.getName();
-
+                    
                     if ( "META-INF/INDEX.LIST".equals( name ) )
                     {
                         // we cannot allow the jar indexes to be copied over or the
@@ -192,6 +192,7 @@ public class DefaultShader
                         InputStream depFile = jarFile.getInputStream( entry );
                         try
                         {
+                            getLogger().debug( "Found nested shading in " + name + ", adding to overall list..." );
                             copyLinesInto( depFile, shadedIn );
                         }
                         finally

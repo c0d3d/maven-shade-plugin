@@ -95,7 +95,7 @@ public class DefaultShaderTest
         Class<?> c = cl.loadClass( "hidden.org.apache.maven.plugins.shade.Lib" );
         Object o = c.newInstance();
         assertEquals( "foo.bar/baz", c.getDeclaredField( "CONSTANT" ).get( o ) );
-        testNumberOfShadedDeps( 2, file );
+        testNumberOfShadedDeps( 1, file );
     }
 
     public void testShaderWithCustomShadedPattern()
@@ -165,13 +165,16 @@ public class DefaultShaderTest
             }
         }, ClassReader.SKIP_CODE );
         assertEquals( "__StringUtils.java", source[0] );
-        testNumberOfShadedDeps(3, file);
+        testNumberOfShadedDeps(2, file);
         
         // Now we re-use the uber jar we just made so we can test nested shading
-        // NOTE: there should be 7 list entrys (2 sets of 3 for the jar,
-        // and one for the name of the jar with nested shading 
+        // NOTE: there should be 4 list entrys 3 for the jar we just made
+        // shaded stuff + it's name, and 1 for the new jar we are adding.
+        set = new LinkedHashSet<File>();
+        set.add( new File( "src/test/jars/test-artifact-1.0-SNAPSHOT.jar" ) );
         set.add( file );
         File newUber = new File("target/foo-relocate-class-nested.jar");
+        
         shadeRequest = new ShadeRequest();
         shadeRequest.setJars( set );
         shadeRequest.setUberJar( newUber );
@@ -180,7 +183,7 @@ public class DefaultShaderTest
         shadeRequest.setResourceTransformers( resourceTransformers );
         s = newShader();
         s.shade( shadeRequest );
-        testNumberOfShadedDeps(7, newUber);
+        testNumberOfShadedDeps(4, newUber);
     }
 
     private void testNumberOfShadedDeps( int i, File file ) throws Exception
@@ -191,7 +194,7 @@ public class DefaultShaderTest
             JarEntry cur = jis.getNextJarEntry();
             while (cur != null) 
             {
-                if ( cur.getName().equals( DefaultShader.SHADED_DEPS_LIST_NAME ) ) 
+                if ( cur.getName().equals( DefaultShader.SHADED_DEPS_PATH ) ) 
                 {
                     assertEquals( i, readNumLines( jis ) );
                     return;
@@ -241,7 +244,7 @@ public class DefaultShaderTest
 
         s.shade( shadeRequest );
         
-        testNumberOfShadedDeps( 3, jar );
+        testNumberOfShadedDeps( 2, jar );
     }
 
     private static DefaultShader newShader()
