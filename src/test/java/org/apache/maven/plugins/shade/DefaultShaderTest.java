@@ -54,8 +54,8 @@ import org.objectweb.asm.Opcodes;
 public class DefaultShaderTest
     extends TestCase
 {
-    private static final String[] EXCLUDES = new String[] { "org/codehaus/plexus/util/xml/Xpp3Dom",
-        "org/codehaus/plexus/util/xml/pull.*" };
+    private static final String[] EXCLUDES =
+        new String[] { "org/codehaus/plexus/util/xml/Xpp3Dom", "org/codehaus/plexus/util/xml/pull.*" };
 
     public void testShaderWithDefaultShadedPattern()
         throws Exception
@@ -88,6 +88,7 @@ public class DefaultShaderTest
         shadeRequest.setFilters( filters );
         shadeRequest.setRelocators( relocators );
         shadeRequest.setResourceTransformers( resourceTransformers );
+        shadeRequest.setListShadedInJar( true );
 
         s.shade( shadeRequest );
 
@@ -127,7 +128,7 @@ public class DefaultShaderTest
         List<Relocator> relocators = new ArrayList<Relocator>();
 
         relocators.add( new SimpleRelocator( "org/codehaus/plexus/util/", "_plexus/util/__", null,
-                                             Arrays.<String> asList() ) );
+                                             Arrays.<String>asList() ) );
 
         List<ResourceTransformer> resourceTransformers = new ArrayList<ResourceTransformer>();
 
@@ -143,7 +144,7 @@ public class DefaultShaderTest
         shadeRequest.setFilters( filters );
         shadeRequest.setRelocators( relocators );
         shadeRequest.setResourceTransformers( resourceTransformers );
-
+        shadeRequest.setListShadedInJar( true );
         s.shade( shadeRequest );
 
         URLClassLoader cl = new URLClassLoader( new URL[] { file.toURI().toURL() } );
@@ -165,55 +166,96 @@ public class DefaultShaderTest
             }
         }, ClassReader.SKIP_CODE );
         assertEquals( "__StringUtils.java", source[0] );
-        testNumberOfShadedDeps(2, file);
-        
+        testNumberOfShadedDeps( 2, file );
+
         // Now we re-use the uber jar we just made so we can test nested shading
         // NOTE: there should be 4 list entrys 3 for the jar we just made
         // shaded stuff + it's name, and 1 for the new jar we are adding.
         set = new LinkedHashSet<File>();
         set.add( new File( "src/test/jars/test-artifact-1.0-SNAPSHOT.jar" ) );
         set.add( file );
-        File newUber = new File("target/foo-relocate-class-nested.jar");
-        
+        File newUber = new File( "target/foo-relocate-class-nested.jar" );
+
         shadeRequest = new ShadeRequest();
         shadeRequest.setJars( set );
         shadeRequest.setUberJar( newUber );
         shadeRequest.setFilters( filters );
         shadeRequest.setRelocators( relocators );
         shadeRequest.setResourceTransformers( resourceTransformers );
+        shadeRequest.setListShadedInJar( true );
+
         s = newShader();
         s.shade( shadeRequest );
-        testNumberOfShadedDeps(4, newUber);
-        
-        
+        testNumberOfShadedDeps( 4, newUber );
+
         // Now we test that we aren't doubling any entries, if we include the same jar twice it should
         // only be present in the list once
         set = new LinkedHashSet<File>();
         set.add( newUber );
-        newUber = new File("target/foo-relocate-class-nested-rep.jar");
-        
+        newUber = new File( "target/foo-relocate-class-nested-rep.jar" );
+
         shadeRequest = new ShadeRequest();
         shadeRequest.setJars( set );
         shadeRequest.setUberJar( newUber );
         shadeRequest.setFilters( filters );
         shadeRequest.setRelocators( relocators );
         shadeRequest.setResourceTransformers( resourceTransformers );
+        shadeRequest.setListShadedInJar( true );
+
         s = newShader();
         s.shade( shadeRequest );
         // only an increase of one due to previous jar added
-        testNumberOfShadedDeps(5, newUber);
-        
+        testNumberOfShadedDeps( 5, newUber );
+
     }
 
-    private void testNumberOfShadedDeps( int i, File file ) throws Exception
+    public void testShadeWithNoInclusionMetaData()
+        throws Exception
+    {
+        DefaultShader s = newShader();
+
+        Set<File> set = new LinkedHashSet<File>();
+
+        set.add( new File( "src/test/jars/test-project-1.0-SNAPSHOT.jar" ) );
+
+        set.add( new File( "src/test/jars/plexus-utils-1.4.1.jar" ) );
+
+        List<Relocator> relocators = new ArrayList<Relocator>();
+
+        relocators.add( new SimpleRelocator( "org/codehaus/plexus/util/", "_plexus/util/__", null,
+                                             Arrays.<String>asList() ) );
+
+        List<ResourceTransformer> resourceTransformers = new ArrayList<ResourceTransformer>();
+
+        resourceTransformers.add( new ComponentsXmlResourceTransformer() );
+
+        List<Filter> filters = new ArrayList<Filter>();
+
+        File file = new File( "target/foo-relocate-class.jar" );
+
+        ShadeRequest shadeRequest = new ShadeRequest();
+        shadeRequest.setJars( set );
+        shadeRequest.setUberJar( file );
+        shadeRequest.setFilters( filters );
+        shadeRequest.setRelocators( relocators );
+        shadeRequest.setResourceTransformers( resourceTransformers );
+        // shadeRequest.setListShadedInJar( false ); <- should be default
+        s.shade( shadeRequest );
+        
+        testNumberOfShadedDeps( 0, file );
+
+    }
+
+    private void testNumberOfShadedDeps( int i, File file )
+        throws Exception
     {
         JarInputStream jis = new JarInputStream( new FileInputStream( file ) );
-        try 
+        try
         {
             JarEntry cur = jis.getNextJarEntry();
-            while (cur != null) 
+            while ( cur != null )
             {
-                if ( cur.getName().equals( DefaultShader.SHADED_DEPS_PATH ) ) 
+                if ( cur.getName().equals( DefaultShader.SHADED_DEPS_PATH ) )
                 {
                     assertEquals( i, readNumLines( jis ) );
                     return;
@@ -221,16 +263,20 @@ public class DefaultShaderTest
                 cur = jis.getNextJarEntry();
             }
         }
-        finally 
+        finally
         {
             jis.close();
         }
+        // Here means no meta-data file so we should have expected 0
+        assertEquals( i, 0 );
 
     }
 
-    private int readNumLines( JarInputStream jis ) throws IOException {
-        
-        return IOUtils.toString( jis ).split( Pattern.quote( IOUtils.LINE_SEPARATOR) ).length;
+    private int readNumLines( JarInputStream jis )
+        throws IOException
+    {
+
+        return IOUtils.toString( jis ).split( Pattern.quote( IOUtils.LINE_SEPARATOR ) ).length;
     }
 
     private void shaderWithPattern( String shadedPattern, File jar, String[] excludes )
@@ -246,7 +292,8 @@ public class DefaultShaderTest
 
         List<Relocator> relocators = new ArrayList<Relocator>();
 
-        relocators.add( new SimpleRelocator( "org/codehaus/plexus/util", shadedPattern, null, Arrays.asList( excludes ) ) );
+        relocators.add( new SimpleRelocator( "org/codehaus/plexus/util", shadedPattern, null,
+                                             Arrays.asList( excludes ) ) );
 
         List<ResourceTransformer> resourceTransformers = new ArrayList<ResourceTransformer>();
 
@@ -260,9 +307,10 @@ public class DefaultShaderTest
         shadeRequest.setFilters( filters );
         shadeRequest.setRelocators( relocators );
         shadeRequest.setResourceTransformers( resourceTransformers );
+        shadeRequest.setListShadedInJar( true );
 
         s.shade( shadeRequest );
-        
+
         testNumberOfShadedDeps( 2, jar );
     }
 

@@ -375,7 +375,10 @@ public class ShadeMojo
 
     @Parameter( defaultValue = "false" )
     private boolean shadeTestJar;
-
+    
+    @Parameter( defaultValue = "false" )
+    private boolean includeShadedNamesAsMetaData;
+    
     /**
      * @since 1.6
      */
@@ -563,6 +566,7 @@ public class ShadeMojo
         shadeRequest.setFilters( filters );
         shadeRequest.setRelocators( relocators );
         shadeRequest.setResourceTransformers( resourceTransformers );
+        shadeRequest.setListShadedInJar( includeShadedNamesAsMetaData );
         return shadeRequest;
     }
 

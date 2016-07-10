@@ -33,6 +33,7 @@ import java.util.Set;
  */
 public class ShadeRequest
 {
+    private boolean listShadedInJar;
 
     private Set<File> jars;
 
@@ -136,5 +137,23 @@ public class ShadeRequest
     public void setShadeSourcesContent( boolean shadeSourcesContent )
     {
         this.shadeSourcesContent = shadeSourcesContent;
+    }
+    
+    /**
+     * @return whether the shader should list all of the jars that were shaded into the uber jar in
+     * a meta-data file within the uber jar
+     */
+    public boolean shouldListShadedInJar()
+    {
+        return listShadedInJar;
+    }
+    
+    /**
+     * @param listShadedInJar if true, shader should try and list all jars shaded into the uber jar in meta-data file
+     * within uber jar
+     */
+    public void setListShadedInJar( boolean listShadedInJar )
+    {
+        this.listShadedInJar = listShadedInJar;
     }
 }

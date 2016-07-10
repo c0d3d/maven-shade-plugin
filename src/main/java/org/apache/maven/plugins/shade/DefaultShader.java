@@ -73,9 +73,9 @@ public class DefaultShader
     public static final String SHADED_DEPS_LIST_NAME = "SHADED-DEPS.LIST";
 
     public static final String SHADED_DEPS_PATH = "META-INF/" + SHADED_DEPS_LIST_NAME;
-    
+
     private Set<String> depsAdded = new HashSet<String>();
-    
+
     public void shade( ShadeRequest shadeRequest )
         throws IOException, MojoExecutionException
     {
@@ -166,24 +166,24 @@ public class DefaultShader
             List<Filter> jarFilters = getFilters( jar, shadeRequest.getFilters() );
 
             JarFile jarFile = newJarFile( jar );
-            
+
             try
             {
 
                 for ( Enumeration<JarEntry> j = jarFile.entries(); j.hasMoreElements(); )
                 {
                     JarEntry entry = j.nextElement();
-                    
+
                     String name = entry.getName();
-                    
+
                     if ( "META-INF/INDEX.LIST".equals( name ) )
                     {
                         // we cannot allow the jar indexes to be copied over or the
                         // jar is useless. Ideally, we could create a new one
                         // later
                         continue;
-                    } 
-                    else if ( SHADED_DEPS_PATH.equals( name ) ) 
+                    }
+                    else if ( shadeRequest.shouldListShadedInJar() && SHADED_DEPS_PATH.equals( name ) )
                     {
                         // Here we found our list of shaded in dependencies
                         // meaning that the jar was built using this plugin (or one that does the same thing)
@@ -199,12 +199,16 @@ public class DefaultShader
                         {
                             depFile.close();
                         }
-                        
+
                     }
-                    
+
                     // We still want to include the name of the jar that was shaded
-                    addToDepsList( shadedIn, jar.getName() );
+                    if ( shadeRequest.shouldListShadedInJar() )
+                    {
+                        addToDepsList( shadedIn, jar.getName() );
+                    } 
                     
+
                     if ( !entry.isDirectory() && !isFiltered( jarFilters, name ) && !SHADED_DEPS_PATH.equals( name ) )
                     {
                         shadeSingleJar( shadeRequest, resources, transformers, remapper, jos, duplicates, jar, jarFile,
@@ -218,24 +222,27 @@ public class DefaultShader
                 jarFile.close();
             }
         }
-        addDepListEntry( jos, shadedIn );
+        if ( shadeRequest.shouldListShadedInJar() )
+        {
+            addDepListEntry( jos, shadedIn, shadeRequest );
+        }
     }
 
-    private void addToDepsList( List<String> shadedIn, String name ) 
+    private void addToDepsList( List<String> shadedIn, String name )
     {
-        if ( !depsAdded.contains( name ) ) 
+        if ( !depsAdded.contains( name ) )
         {
             shadedIn.add( name );
             depsAdded.add( name );
         }
-        
+
     }
 
-    private void addDepListEntry( JarOutputStream fatJar, List<String> shadedIn ) 
-            throws IOException 
+    private void addDepListEntry( JarOutputStream fatJar, List<String> shadedIn, ShadeRequest shadeRequest )
+        throws IOException
     {
         fatJar.putNextEntry( new JarEntry( SHADED_DEPS_PATH ) );
-        for ( String jarName : shadedIn ) 
+        for ( String jarName : shadedIn )
         {
             IOUtils.copy( new StringReader( jarName ), fatJar );
             IOUtils.copy( new StringReader( IOUtils.LINE_SEPARATOR ), fatJar );
@@ -243,11 +250,12 @@ public class DefaultShader
         fatJar.closeEntry();
     }
 
-    private void copyLinesInto( InputStream list, List<String> shadedIn ) throws IOException 
+    private void copyLinesInto( InputStream list, List<String> shadedIn )
+        throws IOException
     {
         BufferedReader br = new BufferedReader( new InputStreamReader( list ) );
         String temp = "";
-        while ( ( temp = br.readLine() ) != null ) 
+        while ( ( temp = br.readLine() ) != null )
         {
             addToDepsList( shadedIn, temp );
         }
@@ -387,10 +395,10 @@ public class DefaultShader
                 classes.add( clazz.replace( ".class", "" ).replace( "/", "." ) );
             }
 
-            //CHECKSTYLE_OFF: LineLength
-            getLogger().warn(
-                Joiner.on( ", " ).join( jarzS ) + " define " + classes.size() + " overlapping classes: " );
-            //CHECKSTYLE_ON: LineLength
+            // CHECKSTYLE_OFF: LineLength
+            getLogger().warn( Joiner.on( ", " ).join( jarzS ) + " define " + classes.size()
+                + " overlapping classes: " );
+            // CHECKSTYLE_ON: LineLength
 
             int max = 10;
 
