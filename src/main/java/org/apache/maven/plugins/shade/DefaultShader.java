@@ -70,9 +70,12 @@ public class DefaultShader
     extends AbstractLogEnabled
     implements Shader
 {
-public static final String LINE_SEP = System.getProperty( "line.separator" );
-    public static final String SHADED_DEPS_PATH = "META-INF/SHADED-DEPS.LIST";
+    public static final String SHADED_DEPS_LIST_NAME = "SHADED-DEPS.LIST";
+
+    public static final String SHADED_DEPS_PATH = "META-INF/" + SHADED_DEPS_LIST_NAME;
+    
     private Set<String> depsAdded = new HashSet<String>();
+    
     public void shade( ShadeRequest shadeRequest )
         throws IOException, MojoExecutionException
     {
@@ -158,7 +161,7 @@ public static final String LINE_SEP = System.getProperty( "line.separator" );
         for ( File jar : shadeRequest.getJars() )
         {
 
-            getLogger().info( "Processing JAR " + jar );
+            getLogger().debug( "Processing JAR " + jar );
 
             List<Filter> jarFilters = getFilters( jar, shadeRequest.getFilters() );
 
@@ -195,12 +198,13 @@ public static final String LINE_SEP = System.getProperty( "line.separator" );
                         {
                             depFile.close();
                         }
+                        
                     }
                     
                     // We still want to include the name of the jar that was shaded
                     addToDepsList( shadedIn, jar.getName() );
                     
-                    if ( !entry.isDirectory() && !isFiltered( jarFilters, name ) )
+                    if ( !entry.isDirectory() && !isFiltered( jarFilters, name ) && !SHADED_DEPS_PATH.equals( name ) )
                     {
                         shadeSingleJar( shadeRequest, resources, transformers, remapper, jos, duplicates, jar, jarFile,
                                         entry, name );
@@ -233,7 +237,7 @@ public static final String LINE_SEP = System.getProperty( "line.separator" );
         for ( String jarName : shadedIn ) 
         {
             IOUtils.copy( new StringReader( jarName ), fatJar );
-            IOUtils.copy( new StringReader( LINE_SEP ), fatJar );
+            IOUtils.copy( new StringReader( IOUtils.LINE_SEPARATOR ), fatJar );
         }
         fatJar.closeEntry();
     }

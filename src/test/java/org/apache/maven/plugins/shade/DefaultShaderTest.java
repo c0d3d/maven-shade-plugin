@@ -20,6 +20,8 @@ package org.apache.maven.plugins.shade;
  */
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -27,9 +29,13 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
+import java.util.regex.Pattern;
 
 import junit.framework.TestCase;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.maven.plugins.shade.filter.Filter;
 import org.apache.maven.plugins.shade.relocation.Relocator;
 import org.apache.maven.plugins.shade.relocation.SimpleRelocator;
@@ -89,6 +95,7 @@ public class DefaultShaderTest
         Class<?> c = cl.loadClass( "hidden.org.apache.maven.plugins.shade.Lib" );
         Object o = c.newInstance();
         assertEquals( "foo.bar/baz", c.getDeclaredField( "CONSTANT" ).get( o ) );
+        testNumberOfShadedDeps( 2, file );
     }
 
     public void testShaderWithCustomShadedPattern()
@@ -158,6 +165,50 @@ public class DefaultShaderTest
             }
         }, ClassReader.SKIP_CODE );
         assertEquals( "__StringUtils.java", source[0] );
+        testNumberOfShadedDeps(3, file);
+        
+        // Now we re-use the uber jar we just made so we can test nested shading
+        // NOTE: there should be 7 list entrys (2 sets of 3 for the jar,
+        // and one for the name of the jar with nested shading 
+        set.add( file );
+        File newUber = new File("target/foo-relocate-class-nested.jar");
+        shadeRequest = new ShadeRequest();
+        shadeRequest.setJars( set );
+        shadeRequest.setUberJar( newUber );
+        shadeRequest.setFilters( filters );
+        shadeRequest.setRelocators( relocators );
+        shadeRequest.setResourceTransformers( resourceTransformers );
+        s = newShader();
+        s.shade( shadeRequest );
+        testNumberOfShadedDeps(7, newUber);
+    }
+
+    private void testNumberOfShadedDeps( int i, File file ) throws Exception
+    {
+        JarInputStream jis = new JarInputStream( new FileInputStream( file ) );
+        try 
+        {
+            JarEntry cur = jis.getNextJarEntry();
+            while (cur != null) 
+            {
+                if ( cur.getName().equals( DefaultShader.SHADED_DEPS_LIST_NAME ) ) 
+                {
+                    assertEquals( i, readNumLines( jis ) );
+                    return;
+                }
+                cur = jis.getNextJarEntry();
+            }
+        }
+        finally 
+        {
+            jis.close();
+        }
+
+    }
+
+    private int readNumLines( JarInputStream jis ) throws IOException {
+        
+        return IOUtils.toString( jis ).split( Pattern.quote( IOUtils.LINE_SEPARATOR) ).length;
     }
 
     private void shaderWithPattern( String shadedPattern, File jar, String[] excludes )
@@ -189,6 +240,8 @@ public class DefaultShaderTest
         shadeRequest.setResourceTransformers( resourceTransformers );
 
         s.shade( shadeRequest );
+        
+        testNumberOfShadedDeps( 3, jar );
     }
 
     private static DefaultShader newShader()
